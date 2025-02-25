@@ -76,3 +76,52 @@ def initialize_data(db: Session = Depends(get_db)):
 
     create_initial_data(db)
     return {"message": "初始化数据成功"}
+
+
+@router.get("/query/{country_code}/{indicator_code}")
+def query_data(
+    country_code: str,
+    indicator_code: str,
+    start_year: Optional[int] = None,
+    end_year: Optional[int] = None,
+    db: Session = Depends(get_db),
+):
+    """查询特定国家和指标的数据"""
+    country = crud.get_country_by_code(db, country_code)
+    if not country:
+        raise HTTPException(status_code=404, detail=f"国家代码不存在: {country_code}")
+
+    indicator = crud.get_indicator_by_code(db, indicator_code)
+    if not indicator:
+        raise HTTPException(status_code=404, detail=f"指标代码不存在: {indicator_code}")
+
+    # 设置日期范围
+    start_date = None
+    if start_year:
+        start_date = date(start_year, 1, 1)
+
+    end_date = None
+    if end_year:
+        end_date = date(end_year, 12, 31)
+
+    # 获取数据
+    data_points = crud.get_data_points(
+        db,
+        country_id=country.id,
+        indicator_id=indicator.id,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    # 格式化结果
+    result = {
+        "country": {"code": country.code, "name": country.name},
+        "indicator": {
+            "code": indicator.code,
+            "name": indicator.name,
+            "unit": indicator.unit,
+        },
+        "data": [{"year": dp.date.year, "value": dp.value} for dp in data_points],
+    }
+
+    return result
