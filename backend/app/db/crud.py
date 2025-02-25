@@ -1,12 +1,12 @@
-# backend/app/db/crud.py
-from sqlalchemy.orm import Session
+from datetime import date
 from typing import Dict, List, Optional
-from datetime import date, datetime
+
+from sqlalchemy.orm import Session
 
 from . import models
 
 
-# 国家相关操作
+# Country CRUD操作
 def get_country(db: Session, country_id: int) -> Optional[models.Country]:
     return db.query(models.Country).filter(models.Country.id == country_id).first()
 
@@ -27,7 +27,28 @@ def create_country(db: Session, country_data: Dict) -> models.Country:
     return db_country
 
 
-# 指标相关操作
+def update_country(
+    db: Session, country_id: int, country_data: Dict
+) -> Optional[models.Country]:
+    db_country = get_country(db, country_id)
+    if db_country:
+        for key, value in country_data.items():
+            setattr(db_country, key, value)
+        db.commit()
+        db.refresh(db_country)
+    return db_country
+
+
+def delete_country(db: Session, country_id: int) -> bool:
+    db_country = get_country(db, country_id)
+    if db_country:
+        db.delete(db_country)
+        db.commit()
+        return True
+    return False
+
+
+# Indicator CRUD操作
 def get_indicator(db: Session, indicator_id: int) -> Optional[models.Indicator]:
     return (
         db.query(models.Indicator).filter(models.Indicator.id == indicator_id).first()
@@ -35,7 +56,7 @@ def get_indicator(db: Session, indicator_id: int) -> Optional[models.Indicator]:
 
 
 def get_indicator_by_code(db: Session, code: str) -> Optional[models.Indicator]:
-    return db.query(models.Indicator).filter(models.Indicator.name == code).first()
+    return db.query(models.Indicator).filter(models.Indicator.code == code).first()
 
 
 def get_indicators(
@@ -52,13 +73,40 @@ def create_indicator(db: Session, indicator_data: Dict) -> models.Indicator:
     return db_indicator
 
 
-# 数据源相关操作
+def update_indicator(
+    db: Session, indicator_id: int, indicator_data: Dict
+) -> Optional[models.Indicator]:
+    db_indicator = get_indicator(db, indicator_id)
+    if db_indicator:
+        for key, value in indicator_data.items():
+            setattr(db_indicator, key, value)
+        db.commit()
+        db.refresh(db_indicator)
+    return db_indicator
+
+
+def delete_indicator(db: Session, indicator_id: int) -> bool:
+    db_indicator = get_indicator(db, indicator_id)
+    if db_indicator:
+        db.delete(db_indicator)
+        db.commit()
+        return True
+    return False
+
+
+# DataSource CRUD操作
 def get_data_source(db: Session, source_id: int) -> Optional[models.DataSource]:
     return db.query(models.DataSource).filter(models.DataSource.id == source_id).first()
 
 
 def get_data_source_by_name(db: Session, name: str) -> Optional[models.DataSource]:
     return db.query(models.DataSource).filter(models.DataSource.name == name).first()
+
+
+def get_data_sources(
+    db: Session, skip: int = 0, limit: int = 100
+) -> List[models.DataSource]:
+    return db.query(models.DataSource).offset(skip).limit(limit).all()
 
 
 def create_data_source(db: Session, source_data: Dict) -> models.DataSource:
@@ -69,7 +117,7 @@ def create_data_source(db: Session, source_data: Dict) -> models.DataSource:
     return db_source
 
 
-# 数据点相关操作
+# DataPoint CRUD操作
 def create_data_point(db: Session, data_point: Dict) -> models.DataPoint:
     db_data_point = models.DataPoint(**data_point)
     db.add(db_data_point)

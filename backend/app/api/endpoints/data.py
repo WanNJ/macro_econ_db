@@ -1,26 +1,32 @@
-# backend/app/api/endpoints/data.py
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime, date
+from datetime import date
 
 from ...db.database import get_db
 from ...db import crud, models
-from ...services.data_collection.collectors import WorldBankCollector, IMFCollector
-from ...services.analytics.analyzer import DataAnalyzer
-from ...services.analytics.report_generator import ReportGenerator
+from ...db.schemas import Country, Indicator, DataSource, DataPoint
 
 router = APIRouter()
 
 
-@router.get("/countries")
+@router.get("/countries", response_model=List[Country])
 def get_countries(db: Session = Depends(get_db), skip: int = 0, limit: int = 100):
     """获取所有国家列表"""
     countries = crud.get_countries(db, skip=skip, limit=limit)
     return countries
 
 
-@router.get("/indicators")
+@router.get("/countries/{country_id}", response_model=Country)
+def get_country(country_id: int, db: Session = Depends(get_db)):
+    """获取单个国家信息"""
+    country = crud.get_country(db, country_id)
+    if country is None:
+        raise HTTPException(status_code=404, detail="国家不存在")
+    return country
+
+
+@router.get("/indicators", response_model=List[Indicator])
 def get_indicators(db: Session = Depends(get_db), skip: int = 0, limit: int = 100):
     """获取所有指标列表"""
     indicators = crud.get_indicators(db, skip=skip, limit=limit)
@@ -61,3 +67,12 @@ def get_data_points(
     )
 
     return data_points
+
+
+@router.post("/init_data")
+def initialize_data(db: Session = Depends(get_db)):
+    """初始化示例数据（仅用于演示）"""
+    from ...db.init_db import create_initial_data
+
+    create_initial_data(db)
+    return {"message": "初始化数据成功"}

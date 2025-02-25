@@ -1,17 +1,10 @@
-# backend/app/db/database.py
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
+from ..core.config import settings
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://macro_user:macro_pass@localhost:5432/macro_econ"
-)
-
-engine = create_engine(DATABASE_URL)
+engine = create_engine(settings.DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
